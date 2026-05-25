@@ -1,0 +1,85 @@
+name: Build Kivy APK with Buildozer
+
+on:
+  push:
+    branches: [ "main" ]  # Triggers when code pushes to main branch
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:     # Allows you to manually trigger the build from GitHub UI
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install System Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          git \
+          ffmpeg \
+          libsdl2-dev \
+          libsdl2-image-dev \
+          libsdl2-mixer-dev \
+          libsdl2-ttf-dev \
+          libportmidi-dev \
+          libswscale-dev \
+          libavformat-dev \
+          libavcodec-dev \
+          zlib1g-dev \
+          libgstreamer1.0-dev \
+          gstreamer1.0-plugins-base \
+          gstreamer1.0-plugins-good \
+          libsqlite3-dev \
+          sqlite3 \
+          bzip2 \
+          libbz2-dev \
+          libssl-dev \
+          openssl \
+          libgdbm-dev \
+          libgdbm-compat-dev \
+          liblzma-dev \
+          libreadline-dev \
+          libffi-dev \
+          uuid-dev \
+          tar \
+          unzip \
+          zip \
+          openjdk-17-jdk \
+          autoconf \
+          libtool \
+          pkg-config \
+          ccache
+
+    - name: Install Buildozer and Cython
+      run: |
+        pip install --upgrade pip
+        pip install buildozer cython virtualenv
+
+    - name: Cache Buildozer Global Directory
+      uses: actions/cache@v4
+      with:
+        path: ~/.buildozer
+        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+        restore-keys: |
+          ${{ runner.os }}-buildozer-
+
+    - name: Build APK using Buildozer
+      run: |
+        # 'yes |' handles auto-accepting SDK/NDK licenses during the initial headless setup
+        yes | buildozer -v android debug
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: JUST-Attendance-APK
+        path: bin/*.apk
